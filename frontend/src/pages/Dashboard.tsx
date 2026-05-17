@@ -55,7 +55,12 @@ const Dashboard: React.FC = () => {
     const fetchDashboardData = async () => {
         try {
             const leadsRes = await api.get('/leads');
-            setLeads(leadsRes.data || []);
+            
+            // ✨ FIXED: Safely extract the leads array from the new paginated backend response!
+            const extractedLeads = leadsRes.data?.data ? leadsRes.data.data : leadsRes.data;
+            
+            // Ensure we strictly set an array so the page never crashes
+            setLeads(Array.isArray(extractedLeads) ? extractedLeads : []);
 
             if (isAdmin) {
                 const teamRes = await api.get('/auth'); 
@@ -65,6 +70,7 @@ const Dashboard: React.FC = () => {
         } catch (error) {
             console.error('Error fetching data:', error);
             setTeam([]); // Prevents infinite loading visual block on failure
+            setLeads([]); // Prevents crash on error
         }
     };
 
