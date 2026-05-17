@@ -38,16 +38,16 @@ const Dashboard: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
-    const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
 
+    const [darkMode, setDarkMode] = useState(() => {return localStorage.getItem('theme') === 'dark';});
     useEffect(() => {
-        if (darkMode) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-        }
+    if (darkMode) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+    }
     }, [darkMode]);
 
     const showToast = (message: string, type: 'success' | 'error') => setToast({ message, type });

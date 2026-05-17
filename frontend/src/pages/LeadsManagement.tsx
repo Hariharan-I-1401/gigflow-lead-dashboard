@@ -44,8 +44,10 @@ const LeadsManagement: React.FC = () => {
     const [sortOption, setSortOption] = useState<string>('Newest');
     const [groupByStatus, setGroupByStatus] = useState(false);
 
-    // 🌗 Theme State
-    const [darkMode, setDarkMode] = useState(() => document.documentElement.classList.contains('dark'));
+    // 🌗 Theme State (FIXED BULLETPROOF LOGIC)
+    const [darkMode, setDarkMode] = useState(() => {
+        return localStorage.getItem('theme') === 'dark';
+    });
 
     useEffect(() => {
         if (darkMode) {
@@ -84,7 +86,7 @@ const LeadsManagement: React.FC = () => {
 
     const showToast = (message: string, type: 'success' | 'error') => setToast({ message, type });
 
-    // ✨ FIXED: Fetch leads using server-side queries for pagination & filtering
+    // ✨ Fetch leads using server-side queries for pagination & filtering
     const fetchLeads = async () => {
         try {
             const response = await api.get('/leads', {
@@ -394,7 +396,8 @@ const LeadsManagement: React.FC = () => {
                         <span className="px-2.5 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 text-[10px] font-extrabold rounded uppercase tracking-wider">{userRole}</span>
                     </div>
                     <div className="flex items-center space-x-6">
-                        <button onClick={() => setDarkMode(!darkMode)} className="p-2 rounded-xl border border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all">
+                        {/* ✨ FIXED TOGGLE BUTTON ✨ */}
+                        <button onClick={() => setDarkMode((prev) => !prev)} className="p-2 rounded-xl border border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all">
                             {darkMode ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
                         </button>
                         <button onClick={() => navigate('/profile')} className="flex items-center space-x-2 group/btn cursor-pointer hover:opacity-80 transition-all">
