@@ -8,7 +8,7 @@ services:
       - "5000:5000"
     environment:
       - PORT=5000
-      - MONGO_URI=mongodb://gigflow_admin:ulALwi4kjh0CFxjt@ac-xpgoxzn-shard-00-00.f28tkur.mongodb.net:27017,ac-xpgoxzn-shard-00-01.f28tkur.mongodb.net:27017,ac-xpgoxzn-shard-00-02.f28tkur.mongodb.net:27017/?ssl=true&replicaSet=atlas-hei3y9-shard-0&authSource=admin&appName=Cluster0
+      - MONGO_URI=${MONGO_URI}
     restart: always
 
   # 💻 2. FRONTEND SERVICE CONTAINER CONFIGURATION
