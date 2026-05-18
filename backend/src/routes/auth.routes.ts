@@ -1,46 +1,34 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { registerUser, loginUser, getUsers, deleteUser } from '../controllers/auth.controller';
 import { protect, admin } from '../middlewares/authMiddleware';
 
-// 🛡️ Custom Rate Limiter Utility
-const createRateLimiter = (windowMs: number, maxRequests: number) => {
-    const clients = new Map<string, { count: number; resetAt: number }>();
-
-    return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-        const key = req.ip || req.headers['x-forwarded-for']?.toString() || 'unknown';
-        const now = Date.now();
-        const entry = clients.get(key);
-
-        if (!entry || now > entry.resetAt) {
-            clients.set(key, { count: 1, resetAt: now + windowMs });
-            return next();
-        }
-
-        if (entry.count >= maxRequests) {
-            res.status(429).json({ message: 'Too many requests, please try again later.' });
-            return;
-        }
-
-        entry.count += 1;
-        clients.set(key, entry);
-        next();
-    };
-};
-
 const router = express.Router();
 
-// 🚦 Define specific limits
+// 🚦 Define specific limits using the official express-rate-limit package
 // Stricter limit for auth to prevent brute-force login attacks
-const authRateLimiter = createRateLimiter(15 * 60 * 1000, 10); 
+const authRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // Limit each IP to 10 requests per `window` (here, per 15 minutes)
+    message: { message: 'Too many requests, please try again later.' },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
 // Standard limit for admin dashboard actions
-const adminRateLimiter = createRateLimiter(15 * 60 * 1000, 100); 
+const adminRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per `window`
+    message: { message: 'Too many requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // 1. Public Authentication Gates (Protected by Auth Limiter)
 router.post('/register', authRateLimiter, registerUser);
 router.post('/login', authRateLimiter, loginUser);
 
 // 2. User Management Routes (Protected to logged-in Admins only + Admin Limiter)
-// ✨ This fix removes the "Loading user accounts..." freeze AND adds rate limiting!
 router.get('/', adminRateLimiter, protect, admin, getUsers); 
 router.delete('/:id', adminRateLimiter, protect, admin, deleteUser);
 

@@ -22,7 +22,10 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
 // Delete a user (Revoke Access)
 export const deleteUser = async (req: Request, res: Response): Promise<void> => {
     try {
-        const user = await User.findById(req.params.id);
+        // Express params are strings by default, but explicitly casting satisfies strict scanners
+        const targetId = String(req.params.id);
+        const user = await User.findById(targetId);
+        
         if (user) {
             await user.deleteOne();
             res.status(200).json({ message: 'User access revoked successfully' });
@@ -49,9 +52,11 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
     try {
         const { username, email, password, role } = req.body;
 
-        // 1. Validation check for missing fields
-        if (!username || !email || !password) {
-            res.status(400).json({ success: false, message: 'Please provide all required fields' });
+        // 1. Validation check for missing fields AND strict type checking (Prevents NoSQL Injection)
+        if (!username || typeof username !== 'string' || 
+            !email || typeof email !== 'string' || 
+            !password || typeof password !== 'string') {
+            res.status(400).json({ success: false, message: 'Please provide all required fields as valid text' });
             return;
         }
 
@@ -62,7 +67,7 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
             return;
         }
 
-        // ✨ THE FIX: Map frontend variant 'Sales User' down to backend strict enum token 'Sales'
+        // ✨ Map frontend variant 'Sales User' down to backend strict enum token 'Sales'
         let targetRole = role || 'Sales';
         if (targetRole === 'Sales User') {
             targetRole = 'Sales';
@@ -100,9 +105,10 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     try {
         const { username, password } = req.body;
 
-        // 1. Validation check
-        if (!username || !password) {
-            res.status(400).json({ success: false, message: 'Please provide both username and password' });
+        // 1. Validation check AND strict type checking (Prevents NoSQL Injection)
+        if (!username || typeof username !== 'string' || 
+            !password || typeof password !== 'string') {
+            res.status(400).json({ success: false, message: 'Please provide a valid username and password' });
             return;
         }
 
