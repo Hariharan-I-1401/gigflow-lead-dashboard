@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, BarChart3, LogOut, User, Sun, Moon, Shield, UserPlus, Trash2, X, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, LogOut, User, Sun, Moon, Shield, UserPlus, Trash2, X, AlertTriangle, Menu } from 'lucide-react';
 import api from '../utils/api';
 import Toast from '../components/Toast';
 
@@ -12,7 +12,7 @@ interface Lead {
 interface TeamMember {
     _id: string;
     username?: string; 
-    name?: string; // Flexible fallback for structural schema variants
+    name?: string; 
     email: string;
     role: 'Admin' | 'Sales User';
 }
@@ -38,16 +38,18 @@ const Dashboard: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
+    // Mobile Navigation Drawer Toggle State
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const [darkMode, setDarkMode] = useState(() => {return localStorage.getItem('theme') === 'dark';});
     useEffect(() => {
-    if (darkMode) {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-    }
+        if (darkMode) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+        }
     }, [darkMode]);
 
     const showToast = (message: string, type: 'success' | 'error') => setToast({ message, type });
@@ -55,22 +57,17 @@ const Dashboard: React.FC = () => {
     const fetchDashboardData = async () => {
         try {
             const leadsRes = await api.get('/leads');
-            
-            // ✨ FIXED: Safely extract the leads array from the new paginated backend response!
             const extractedLeads = leadsRes.data?.data ? leadsRes.data.data : leadsRes.data;
-            
-            // Ensure we strictly set an array so the page never crashes
             setLeads(Array.isArray(extractedLeads) ? extractedLeads : []);
 
             if (isAdmin) {
                 const teamRes = await api.get('/auth'); 
-                // Checks if array exists, otherwise defaults to empty array to drop loading screen
                 setTeam(Array.isArray(teamRes.data) ? teamRes.data : []);
             }
         } catch (error) {
             console.error('Error fetching data:', error);
-            setTeam([]); // Prevents infinite loading visual block on failure
-            setLeads([]); // Prevents crash on error
+            setTeam([]); 
+            setLeads([]); 
         }
     };
 
@@ -177,109 +174,71 @@ const Dashboard: React.FC = () => {
                         <h3 className="text-xl font-bold mb-4 flex items-center"><UserPlus className="h-5 w-5 mr-2 text-[#120085] dark:text-blue-400"/> Add User</h3>
                         
                         <form onSubmit={handleAddUser} className="space-y-4 text-left">
-                            {/* Username Field */}
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Username <span className="text-rose-500">*</span>
-                                </label>
-                                <input 
-                                    type="text" 
-                                    value={newUserName} 
-                                    onChange={(e)=>setNewUserName(e.target.value)} 
-                                    required 
-                                    placeholder="e.g. jsmith" 
-                                    className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" 
-                                />
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Username <span className="text-rose-500">*</span></label>
+                                <input type="text" value={newUserName} onChange={(e)=>setNewUserName(e.target.value)} required placeholder="e.g. jsmith" className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
                             </div>
-
-                            {/* Email Field */}
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Email Address <span className="text-rose-500">*</span>
-                                </label>
-                                <input 
-                                    type="email" 
-                                    value={newUserEmail} 
-                                    onChange={(e)=>setNewUserEmail(e.target.value)} 
-                                    required 
-                                    placeholder="e.g. jsmith@example.com" 
-                                    className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" 
-                                />
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Email Address <span className="text-rose-500">*</span></label>
+                                <input type="email" value={newUserEmail} onChange={(e)=>setNewUserEmail(e.target.value)} required placeholder="e.g. jsmith@example.com" className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
                             </div>
-
-                            {/* Password Field */}
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Temporary Password <span className="text-rose-500">*</span>
-                                </label>
-                                <input 
-                                    type="password" 
-                                    value={newUserPassword} 
-                                    onChange={(e)=>setNewUserPassword(e.target.value)} 
-                                    required 
-                                    placeholder="Create a temporary password" 
-                                    className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" 
-                                />
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Temporary Password <span className="text-rose-500">*</span></label>
+                                <input type="password" value={newUserPassword} onChange={(e)=>setNewUserPassword(e.target.value)} required placeholder="Create a temporary password" className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
                             </div>
-
-                            {/* System Role Dropdown */}
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    System Role <span className="text-rose-500">*</span>
-                                </label>
-                                <select 
-                                    value={newUserRole} 
-                                    onChange={(e)=>setNewUserRole(e.target.value as any)} 
-                                    className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white cursor-pointer"
-                                >
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">System Role <span className="text-rose-500">*</span></label>
+                                <select value={newUserRole} onChange={(e)=>setNewUserRole(e.target.value as any)} className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white cursor-pointer" >
                                     <option value="Sales User">Sales User</option>
                                     <option value="Admin">Admin</option>
                                 </select>
                             </div>
-
-                            {/* Action Buttons */}
                             <div className="flex justify-end space-x-2 pt-2">
-                                <button 
-                                    type="button" 
-                                    onClick={() => setIsAddUserModalOpen(false)} 
-                                    className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all dark:text-white"
-                                >
-                                    Cancel
-                                </button>
-                                <button 
-                                    type="submit" 
-                                    className="px-4 py-2 bg-[#120085] hover:bg-blue-800 text-white rounded-xl text-sm font-semibold shadow-md transition-all"
-                                >
-                                    Create User
-                                </button>
+                                <button type="button" onClick={() => setIsAddUserModalOpen(false)} className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all dark:text-white">Cancel</button>
+                                <button type="submit" className="px-4 py-2 bg-[#120085] hover:bg-blue-800 text-white rounded-xl text-sm font-semibold shadow-md transition-all">Create User</button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* SIDEBAR */}
-            <aside className="hidden md:flex w-16 hover:w-64 bg-[#120085] text-white flex-col justify-between shadow-xl transition-all duration-300 group z-30">
+            {/* MOBILE DARK BACKDROP OVERLAY */}
+            {isMobileMenuOpen && (
+                <div onClick={() => setIsMobileMenuOpen(false)} className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 md:hidden" />
+            )}
+
+            {/* ADAPTIVE SIDEBAR LAYER */}
+            <aside className={`
+                fixed top-0 left-0 h-full w-64 bg-[#120085] text-white flex flex-col justify-between shadow-xl transition-all duration-300 z-50 group
+                md:relative md:w-16 md:hover:w-64 md:translate-x-0 md:z-30
+                ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+            `}>
                 <div>
-                    <div className="p-4 border-b border-white/10 flex items-center space-x-4 overflow-hidden h-16 shrink-0">
-                        <div className="h-8 w-8 bg-white text-[#120085] rounded-lg flex items-center justify-center font-bold text-lg shrink-0">G</div>
-                        <span className="text-lg font-bold tracking-tight opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">GigFlow</span>
+                    <div className="p-4 border-b border-white/10 flex items-center justify-between md:justify-start space-x-4 overflow-hidden h-16 shrink-0">
+                        <div className="flex items-center space-x-4">
+                            <div className="h-8 w-8 bg-white text-[#120085] rounded-lg flex items-center justify-center font-bold text-lg shrink-0">G</div>
+                            <span className="text-lg font-bold tracking-tight md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">GigFlow</span>
+                        </div>
+                        {/* Mobile explicit close button anchor point */}
+                        <button onClick={() => setIsMobileMenuOpen(false)} className="text-white/70 hover:text-white md:hidden">
+                            <X className="h-5 w-5" />
+                        </button>
                     </div>
                     <nav className="mt-6 px-2 space-y-1 overflow-hidden">
-                        <button onClick={() => navigate('/dashboard')} className="w-full flex items-center space-x-4 bg-white/10 text-white px-3 py-3 rounded-lg text-sm font-medium transition-all text-left truncate">
+                        <button onClick={() => { navigate('/dashboard'); setIsMobileMenuOpen(false); }} className="w-full flex items-center space-x-4 bg-white/10 text-white px-3 py-3 rounded-lg text-sm font-medium transition-all text-left truncate">
                             <LayoutDashboard className="h-5 w-5 shrink-0" />
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">Executive Dashboard</span>
+                            <span className="md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Executive Dashboard</span>
                         </button>
-                        <button onClick={() => navigate('/leads')} className="w-full flex items-center space-x-4 text-white/70 hover:bg-white/5 hover:text-white px-3 py-3 rounded-lg text-sm font-medium transition-all text-left truncate">
+                        <button onClick={() => { navigate('/leads'); setIsMobileMenuOpen(false); }} className="w-full flex items-center space-x-4 text-white/70 hover:bg-white/5 hover:text-white px-3 py-3 rounded-lg text-sm font-medium transition-all text-left truncate">
                             <Users className="h-5 w-5 shrink-0" />
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">Leads Workspace</span>
+                            <span className="md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Leads Workspace</span>
                         </button>
                     </nav>
                 </div>
                 <div className="p-2 border-t border-white/10 overflow-hidden">
                     <button onClick={() => setIsLogoutModalOpen(true)} className="w-full flex items-center space-x-4 text-white/70 hover:bg-rose-600 hover:text-white px-3 py-3 rounded-lg text-sm font-medium transition-all text-left truncate">
                         <LogOut className="h-5 w-5 shrink-0" />
-                        <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">Log Out</span>
+                        <span className="md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Log Out</span>
                     </button>
                 </div>
             </aside>
@@ -288,6 +247,10 @@ const Dashboard: React.FC = () => {
             <div className="flex-1 flex flex-col overflow-hidden">
                 <header className="h-16 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-6 shadow-sm z-10 transition-colors duration-200">
                     <div className="flex items-center space-x-3">
+                        {/* HAMBURGER TRIGGER - Hidden completely on desktop */}
+                        <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-gray-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-xl md:hidden transition-all">
+                            <Menu className="h-5 w-5" />
+                        </button>
                         <h2 className="text-lg font-bold text-gray-800 dark:text-white">Executive Dashboard</h2>
                         <span className="px-2.5 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 text-[10px] font-extrabold rounded uppercase tracking-wider">{userRole}</span>
                     </div>
@@ -330,7 +293,7 @@ const Dashboard: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* 🛡️ ADMIN ONLY: USER MANAGEMENT PANEL */}
+                        {/* USER MANAGEMENT PANEL */}
                         {isAdmin && (
                             <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden mt-8 transition-colors duration-200">
                                 <div className="p-5 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-700/50">
@@ -359,7 +322,6 @@ const Dashboard: React.FC = () => {
                                                 team.map((member) => (
                                                     <tr key={member._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                                         <td className="px-6 py-4">
-                                                            {/* ✨ Dual evaluation fallback checks for username OR name */}
                                                             <div className="font-bold text-[#120085] dark:text-blue-400">{member.username || member.name || 'System Account'}</div>
                                                             <div className="text-xs text-gray-500 dark:text-gray-400">{member.email}</div>
                                                         </td>

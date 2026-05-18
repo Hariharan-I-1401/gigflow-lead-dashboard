@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
     LayoutDashboard, Users, LogOut, Trash2, Edit3, X, 
     Search, Plus, ChevronDown, FolderArchive, Sun, Moon, 
-    AlertTriangle, User, Eye, FilterX, ChevronLeft, ChevronRight, Download, ArrowUpDown
+    AlertTriangle, User, Eye, FilterX, ChevronLeft, ChevronRight, Download, ArrowUpDown, Menu
 } from 'lucide-react';
 import api from '../utils/api';
 import Toast from '../components/Toast';
@@ -43,6 +43,9 @@ const LeadsManagement: React.FC = () => {
     const [filterDate, setFilterDate] = useState<string>(''); 
     const [sortOption, setSortOption] = useState<string>('Newest');
     const [groupByStatus, setGroupByStatus] = useState(false);
+
+    // Mobile Navigation Drawer Toggle State
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     // 🌗 Theme State
     const [darkMode, setDarkMode] = useState(() => {
@@ -124,13 +127,11 @@ const LeadsManagement: React.FC = () => {
         setCurrentPage(1);
     };
 
-    // ✨ FIXED: Async CSV Export fetching ALL matching records
     const exportToCSV = async () => {
         if (!isAdmin) return; 
         showToast('Preparing CSV Export...', 'success');
 
         try {
-            // Fetch ALL leads matching the current filters by passing a massive limit
             const response = await api.get('/leads', {
                 params: {
                     limit: 10000, 
@@ -329,7 +330,7 @@ const LeadsManagement: React.FC = () => {
                 </div>
             )}
 
-            {/* UNIFIED ADD/EDIT FORM MODAL WITH MANDATORY LABELS */}
+            {/* UNIFIED ADD/EDIT FORM MODAL */}
             {isFormModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
                     <div className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl relative border dark:border-slate-700">
@@ -338,16 +339,12 @@ const LeadsManagement: React.FC = () => {
                         
                         <form onSubmit={handleFormSubmit} className="space-y-4 text-left">
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Full Name <span className="text-rose-500">*</span>
-                                </label>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Full Name <span className="text-rose-500">*</span></label>
                                 <input type="text" value={editName} onChange={(e)=>setEditName(e.target.value)} required placeholder="e.g. John Doe" className="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
                             </div>
                             
                             <div>
-                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                                    Email Address <span className="text-rose-500">*</span>
-                                </label>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Email Address <span className="text-rose-500">*</span></label>
                                 <input type="email" value={editEmail} onChange={(e)=>setEditEmail(e.target.value)} required placeholder="e.g. john@example.com" className="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
                             </div>
                             
@@ -402,28 +399,42 @@ const LeadsManagement: React.FC = () => {
                 </div>
             )}
 
-            {/* SIDEBAR */}
-            <aside className="hidden md:flex w-16 hover:w-64 bg-[#120085] text-white flex-col justify-between shadow-xl transition-all duration-300 group z-30">
+            {/* MOBILE DARK BACKDROP OVERLAY */}
+            {isMobileMenuOpen && (
+                <div onClick={() => setIsMobileMenuOpen(false)} className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 md:hidden" />
+            )}
+
+            {/* ADAPTIVE SIDEBAR LAYER */}
+            <aside className={`
+                fixed top-0 left-0 h-full w-64 bg-[#120085] text-white flex flex-col justify-between shadow-xl transition-all duration-300 z-50 group
+                md:relative md:w-16 md:hover:w-64 md:translate-x-0 md:z-30
+                ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+            `}>
                 <div>
-                    <div className="p-4 border-b border-white/10 flex items-center space-x-4 overflow-hidden h-16 shrink-0">
-                        <div className="h-8 w-8 bg-white text-[#120085] rounded-lg flex items-center justify-center font-bold text-lg shrink-0">G</div>
-                        <span className="text-lg font-bold tracking-tight opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">GigFlow</span>
+                    <div className="p-4 border-b border-white/10 flex items-center justify-between md:justify-start space-x-4 overflow-hidden h-16 shrink-0">
+                        <div className="flex items-center space-x-4">
+                            <div className="h-8 w-8 bg-white text-[#120085] rounded-lg flex items-center justify-center font-bold text-lg shrink-0">G</div>
+                            <span className="text-lg font-bold tracking-tight md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">GigFlow</span>
+                        </div>
+                        <button onClick={() => setIsMobileMenuOpen(false)} className="text-white/70 hover:text-white md:hidden">
+                            <X className="h-5 w-5" />
+                        </button>
                     </div>
                     <nav className="mt-6 px-2 space-y-1 overflow-hidden">
-                        <button onClick={() => navigate('/dashboard')} className="w-full flex items-center space-x-4 text-white/70 hover:bg-white/5 hover:text-white px-3 py-3 rounded-lg text-sm font-medium transition-all text-left truncate">
+                        <button onClick={() => { navigate('/dashboard'); setIsMobileMenuOpen(false); }} className="w-full flex items-center space-x-4 text-white/70 hover:bg-white/5 hover:text-white px-3 py-3 rounded-lg text-sm font-medium transition-all text-left truncate">
                             <LayoutDashboard className="h-5 w-5 shrink-0" />
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">Dashboard Matrix</span>
+                            <span className="md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Dashboard Matrix</span>
                         </button>
-                        <button onClick={() => navigate('/leads')} className="w-full flex items-center space-x-4 bg-white/10 text-white px-3 py-3 rounded-lg text-sm font-medium transition-all text-left truncate">
+                        <button onClick={() => { navigate('/leads'); setIsMobileMenuOpen(false); }} className="w-full flex items-center space-x-4 bg-white/10 text-white px-3 py-3 rounded-lg text-sm font-medium transition-all text-left truncate">
                             <Users className="h-5 w-5 shrink-0" />
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">Leads Workspace</span>
+                            <span className="md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Leads Workspace</span>
                         </button>
                     </nav>
                 </div>
                 <div className="p-2 border-t border-white/10 overflow-hidden">
                     <button onClick={() => setIsLogoutModalOpen(true)} className="w-full flex items-center space-x-4 text-white/70 hover:bg-rose-600 hover:text-white px-3 py-3 rounded-lg text-sm font-medium transition-all text-left truncate">
                         <LogOut className="h-5 w-5 shrink-0" />
-                        <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">Log Out</span>
+                        <span className="md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">Log Out</span>
                     </button>
                 </div>
             </aside>
@@ -432,6 +443,10 @@ const LeadsManagement: React.FC = () => {
             <div className="flex-1 flex flex-col overflow-hidden">
                 <header className="h-16 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-6 shadow-sm z-10 transition-colors duration-200">
                     <div className="flex items-center space-x-3">
+                        {/* HAMBURGER TRIGGER - Hidden on desktop */}
+                        <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 -ml-2 text-gray-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-xl md:hidden transition-all">
+                            <Menu className="h-5 w-5" />
+                        </button>
                         <h2 className="text-lg font-bold text-gray-800 dark:text-white">Lead Management Control</h2>
                         <span className="px-2.5 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 text-[10px] font-extrabold rounded uppercase tracking-wider">{userRole}</span>
                     </div>
@@ -473,6 +488,7 @@ const LeadsManagement: React.FC = () => {
                                     value={sortOption} 
                                     onChange={(e) => setSortOption(e.target.value)} 
                                     className="pl-8 pr-6 py-2 border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-bold shadow-sm focus:outline-none cursor-pointer appearance-none"
+                                // Remove native mobile dropdown overlay clipping vectors
                                 >
                                     <option value="Newest">Sort: Newest</option>
                                     <option value="Oldest">Sort: Oldest</option>
