@@ -93,7 +93,6 @@ const Login: React.FC = () => {
                         {/* Username Field */}
                         <div>
                             <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Username
                                 Username <span className="text-rose-500">*</span>
                             </label>
                             <div className="relative">
