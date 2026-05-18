@@ -157,17 +157,14 @@ export const updateLead = async (req: Request, res: Response): Promise<void> => 
             res.status(400).json({ message: 'No valid fields provided for update' });
             return;
         }
-
-        // Verify ownership (or allow if Admin)
+        
         const query: any = { _id: id };
         if (userRole !== 'Admin') query.assignedTo = userId;
 
         const updatedLead = await Lead.findOneAndUpdate(
             query,
             { $set: updateData },
-            { new: true, runValidators: true }
-        );
-
+            { returnDocument: 'after', runValidators: true });
         if (!updatedLead) {
             res.status(404).json({ message: 'Lead not found or unauthorized' });
             return;

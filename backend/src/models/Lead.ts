@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface ILead extends Document {
     name: string;
     email: string;
-    status: 'New' | 'Contacted' | 'Qualified' | 'Lost';
+    status: 'New' | 'Contacted' | 'Qualified' | 'Lost'|'Won';
     source: 'Website' | 'Instagram' | 'Referral';
     assignedTo: mongoose.Schema.Types.ObjectId;
     createdAt: Date;
@@ -15,7 +15,7 @@ const leadSchema: Schema = new mongoose.Schema({
     email: { type: String, required: true },
     status: { 
         type: String, 
-        enum: ['New', 'Contacted', 'Qualified', 'Lost'], 
+        enum: ['New', 'Contacted', 'Qualified', 'Lost', 'Won'], 
         default: 'New' 
     },
     source: { 
