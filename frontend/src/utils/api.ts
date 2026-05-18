@@ -1,10 +1,9 @@
 import axios from 'axios';
 
-// Create the central Axios instance
 const api = axios.create({
-    baseURL: 'http://localhost:5000/api', // Make sure this matches your backend!
+    // It will look for the .env variable first. If it can't find it, it safely falls back.
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api', 
 });
-
 // Add a Request Interceptor to automatically attach the token
 api.interceptors.request.use(
     (config) => {
