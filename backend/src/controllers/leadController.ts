@@ -1,5 +1,10 @@
+import mongoose from 'mongoose';
 import { Request, Response } from 'express';
 import Lead from '../models/Lead';
+
+const escapeRegex = (value: string): string => {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
 
 // 1. CREATE a new Lead
 export const createLead = async (req: Request, res: Response): Promise<void> => {
@@ -51,17 +56,31 @@ export const getLeads = async (req: Request, res: Response): Promise<void> => {
             query.assignedTo = userId;
         }
 
-        // Apply Dropdown Filters
-        if (req.query.status) query.status = req.query.status;
-        if (req.query.source) query.source = req.query.source;
+        // Apply Dropdown Filters safely using allowed enum values
+        const allowedStatuses = ['New', 'Contacted', 'Qualified', 'Lost'];
+        const allowedSources = ['Website', 'Instagram', 'Referral'];
+
+        const statusFilter = typeof req.query.status === 'string' ? req.query.status.trim() : '';
+        if (statusFilter && allowedStatuses.includes(statusFilter)) {
+            query.status = statusFilter;
+        }
+
+        const sourceFilter = typeof req.query.source === 'string' ? req.query.source.trim() : '';
+        if (sourceFilter && allowedSources.includes(sourceFilter)) {
+            query.source = sourceFilter;
+        }
 
         // Apply Advanced Search (Matches name OR email, case-insensitive)
-        if (req.query.search) {
-            const searchRegex = new RegExp(req.query.search as string, 'i');
-            query.$or = [
-                { name: searchRegex },
-                { email: searchRegex }
-            ];
+        if (typeof req.query.search === 'string') {
+            const searchTerm = req.query.search.trim();
+            if (searchTerm.length > 0) {
+                const safeSearch = escapeRegex(searchTerm);
+                const searchRegex = new RegExp(safeSearch, 'i');
+                query.$or = [
+                    { name: searchRegex },
+                    { email: searchRegex }
+                ];
+            }
         }
 
         // --- 3. SORTING SETUP ---
@@ -99,7 +118,15 @@ export const getLeads = async (req: Request, res: Response): Promise<void> => {
 // 3. VIEW a single lead
 export const getLeadById = async (req: Request, res: Response): Promise<void> => {
     try {
-        const lead = await Lead.findOne({ _id: req.params.id, assignedTo: (req as any).user.id });
+        const userId = (req as any).user?.id;
+        const leadId = String(req.params.id).trim();
+
+        if (!mongoose.Types.ObjectId.isValid(leadId)) {
+            res.status(400).json({ message: 'Invalid lead id' });
+            return;
+        }
+
+        const lead = await Lead.findOne({ _id: new mongoose.Types.ObjectId(leadId), assignedTo: userId });
         if (!lead) {
             res.status(404).json({ message: 'Lead not found' });
             return;
@@ -117,21 +144,34 @@ export const updateLead = async (req: Request, res: Response): Promise<void> => 
         const userId = (req as any).user?.id;
         const userRole = (req as any).user?.role;
 
+        // Only allow specific lead fields to be updated
+        const allowedFields = ['name', 'email', 'phone', 'status', 'source', 'value', 'notes'];
+        const updateData: any = {};
+        allowedFields.forEach((field) => {
+            if (req.body[field] !== undefined) {
+                updateData[field] = req.body[field];
+            }
+        });
+
+        if (Object.keys(updateData).length === 0) {
+            res.status(400).json({ message: 'No valid fields provided for update' });
+            return;
+        }
+
         // Verify ownership (or allow if Admin)
         const query: any = { _id: id };
         if (userRole !== 'Admin') query.assignedTo = userId;
 
-        const lead = await Lead.findOne(query);
-        if (!lead) {
+        const updatedLead = await Lead.findOneAndUpdate(
+            query,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedLead) {
             res.status(404).json({ message: 'Lead not found or unauthorized' });
             return;
         }
-
-        const updatedLead = await Lead.findByIdAndUpdate(
-            id, 
-            { $set: req.body }, 
-            { new: true, runValidators: true }
-        );
 
         res.status(200).json(updatedLead);
     } catch (error) {

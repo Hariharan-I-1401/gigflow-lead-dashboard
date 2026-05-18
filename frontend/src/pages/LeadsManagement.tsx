@@ -44,7 +44,7 @@ const LeadsManagement: React.FC = () => {
     const [sortOption, setSortOption] = useState<string>('Newest');
     const [groupByStatus, setGroupByStatus] = useState(false);
 
-    // 🌗 Theme State (FIXED BULLETPROOF LOGIC)
+    // 🌗 Theme State
     const [darkMode, setDarkMode] = useState(() => {
         return localStorage.getItem('theme') === 'dark';
     });
@@ -59,7 +59,7 @@ const LeadsManagement: React.FC = () => {
         }
     }, [darkMode]);
 
-    // ✨ DEBOUNCED SEARCH LOGIC (Waits 300ms after user stops typing)
+    // ✨ DEBOUNCED SEARCH LOGIC
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedSearchQuery(searchQuery);
@@ -86,7 +86,6 @@ const LeadsManagement: React.FC = () => {
 
     const showToast = (message: string, type: 'success' | 'error') => setToast({ message, type });
 
-    // ✨ Fetch leads using server-side queries for pagination & filtering
     const fetchLeads = async () => {
         try {
             const response = await api.get('/leads', {
@@ -100,13 +99,11 @@ const LeadsManagement: React.FC = () => {
                 }
             });
 
-            // Extract paginated layout data out from the operational payload envelope
             if (response.data && response.data.data) {
                 setLeads(response.data.data);
                 setTotalPages(response.data.metadata?.totalPages || 1);
                 setTotalRecords(response.data.metadata?.totalRecords || 0);
             } else {
-                // Fallback support for older endpoint data structural configurations
                 setLeads(response.data);
             }
         } catch (error) {
@@ -114,15 +111,8 @@ const LeadsManagement: React.FC = () => {
         }
     };
 
-    // Re-fetch data whenever any pagination, filtering, search, or sorting query state changes
-    useEffect(() => { 
-        fetchLeads(); 
-    }, [currentPage, debouncedSearchQuery, filterStatus, filterSource, sortOption]);
-
-    // Reset pagination window tracking indices back to index 1 whenever a filter drops down
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [debouncedSearchQuery, filterStatus, filterSource, sortOption]);
+    useEffect(() => { fetchLeads(); }, [currentPage, debouncedSearchQuery, filterStatus, filterSource, sortOption]);
+    useEffect(() => { setCurrentPage(1); }, [debouncedSearchQuery, filterStatus, filterSource, sortOption]);
 
     const clearFilters = () => {
         setSearchQuery('');
@@ -134,27 +124,48 @@ const LeadsManagement: React.FC = () => {
         setCurrentPage(1);
     };
 
-    const exportToCSV = () => {
+    // ✨ FIXED: Async CSV Export fetching ALL matching records
+    const exportToCSV = async () => {
         if (!isAdmin) return; 
-        if (leads.length === 0) {
-            showToast('No data available to export.', 'error');
-            return;
+        showToast('Preparing CSV Export...', 'success');
+
+        try {
+            // Fetch ALL leads matching the current filters by passing a massive limit
+            const response = await api.get('/leads', {
+                params: {
+                    limit: 10000, 
+                    status: filterStatus !== 'All' ? filterStatus : undefined,
+                    source: filterSource !== 'All' ? filterSource : undefined,
+                    search: debouncedSearchQuery !== '' ? debouncedSearchQuery : undefined,
+                    sort: sortOption
+                }
+            });
+
+            const allLeads = response.data?.data || response.data || [];
+
+            if (allLeads.length === 0) {
+                showToast('No data available to export.', 'error');
+                return;
+            }
+
+            const headers = ['Lead Name', 'Email', 'Phone', 'Status', 'Source', 'Date Created', 'Notes'];
+            const csvRows = allLeads.map((lead: Lead) => [
+                `"${lead.name}"`, `"${lead.email}"`, `"${lead.phone || ''}"`, `"${lead.status}"`, 
+                `"${lead.source}"`, `"${lead.createdAt ? new Date(lead.createdAt).toLocaleString() : ''}"`, `"${lead.notes || ''}"`
+            ].join(','));
+            
+            const csvContent = [headers.join(','), ...csvRows].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', `GigFlow_Leads_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('CSV Export Downloaded Successfully!', 'success');
+        } catch (error) {
+            showToast('Failed to generate CSV export.', 'error');
         }
-        const headers = ['Lead Name', 'Email', 'Phone', 'Status', 'Source', 'Date Created', 'Notes'];
-        const csvRows = leads.map(lead => [
-            `"${lead.name}"`, `"${lead.email}"`, `"${lead.phone || ''}"`, `"${lead.status}"`, 
-            `"${lead.source}"`, `"${lead.createdAt ? new Date(lead.createdAt).toLocaleString() : ''}"`, `"${lead.notes || ''}"`
-        ].join(','));
-        
-        const csvContent = [headers.join(','), ...csvRows].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', `GigFlow_Leads_${new Date().toISOString().split('T')[0]}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showToast('CSV Export Downloaded Successfully!', 'success');
     };
 
     const handleStatusChange = async (id: string, newStatus: string) => {
@@ -247,7 +258,6 @@ const LeadsManagement: React.FC = () => {
         }
     };
 
-    // Calculate item entry position numbers dynamically using database state tracking values
     const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
 
     return (
@@ -319,26 +329,56 @@ const LeadsManagement: React.FC = () => {
                 </div>
             )}
 
-            {/* UNIFIED ADD/EDIT FORM MODAL */}
+            {/* UNIFIED ADD/EDIT FORM MODAL WITH MANDATORY LABELS */}
             {isFormModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
                     <div className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-2xl p-6 max-w-lg w-full mx-4 shadow-2xl relative border dark:border-slate-700">
                         <button onClick={() => setIsFormModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><X className="h-5 w-5" /></button>
                         <h3 className="text-xl font-bold mb-4">{editingLeadId ? 'Modify Lead' : 'Register New Lead'}</h3>
+                        
                         <form onSubmit={handleFormSubmit} className="space-y-4 text-left">
-                            <input type="text" value={editName} onChange={(e)=>setEditName(e.target.value)} required placeholder="Name" className="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
-                            <input type="email" value={editEmail} onChange={(e)=>setEditEmail(e.target.value)} required placeholder="Email" className="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
-                            <input type="text" value={editPhone} onChange={(e)=>setEditPhone(e.target.value)} placeholder="Phone" className="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
-                            <select value={editStatus} onChange={(e)=>setEditStatus(e.target.value as any)} className="w-full p-2.5 border dark:border-slate-600 rounded-xl text-sm focus:outline-none text-gray-900 dark:text-white dark:bg-slate-800">
-                                {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                            <select value={editSource} onChange={(e)=>setEditSource(e.target.value as any)} className="w-full p-2.5 border dark:border-slate-600 rounded-xl text-sm focus:outline-none text-gray-900 dark:text-white dark:bg-slate-800">
-                                {sources.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                            <textarea rows={2} value={editNotes} onChange={(e)=>setEditNotes(e.target.value)} placeholder="Summary notes..." className="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm resize-none focus:outline-none dark:text-white" />
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    Full Name <span className="text-rose-500">*</span>
+                                </label>
+                                <input type="text" value={editName} onChange={(e)=>setEditName(e.target.value)} required placeholder="e.g. John Doe" className="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    Email Address <span className="text-rose-500">*</span>
+                                </label>
+                                <input type="email" value={editEmail} onChange={(e)=>setEditEmail(e.target.value)} required placeholder="e.g. john@example.com" className="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+                                <input type="text" value={editPhone} onChange={(e)=>setEditPhone(e.target.value)} placeholder="e.g. +1 234 567 8900" className="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Pipeline Status</label>
+                                    <select value={editStatus} onChange={(e)=>setEditStatus(e.target.value as any)} className="w-full p-2.5 border dark:border-slate-600 rounded-xl text-sm focus:outline-none text-gray-900 dark:text-white dark:bg-slate-800">
+                                        {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Acquisition Source</label>
+                                    <select value={editSource} onChange={(e)=>setEditSource(e.target.value as any)} className="w-full p-2.5 border dark:border-slate-600 rounded-xl text-sm focus:outline-none text-gray-900 dark:text-white dark:bg-slate-800">
+                                        {sources.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Summary Notes</label>
+                                <textarea rows={2} value={editNotes} onChange={(e)=>setEditNotes(e.target.value)} placeholder="Add any relevant background information..." className="w-full p-2.5 border dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm resize-none focus:outline-none dark:text-white" />
+                            </div>
+                            
                             <div className="flex justify-end space-x-2 pt-2">
                                 <button type="button" onClick={() => setIsFormModalOpen(false)} className="px-4 py-2 border dark:border-slate-600 rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all dark:text-white">Cancel</button>
-                                <button type="submit" className="px-4 py-2 bg-[#120085] hover:bg-blue-800 text-white rounded-xl text-sm font-semibold shadow-md transition-all">Save</button>
+                                <button type="submit" className="px-4 py-2 bg-[#120085] hover:bg-blue-800 text-white rounded-xl text-sm font-semibold shadow-md transition-all">Save Lead</button>
                             </div>
                         </form>
                     </div>
@@ -396,7 +436,6 @@ const LeadsManagement: React.FC = () => {
                         <span className="px-2.5 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 text-[10px] font-extrabold rounded uppercase tracking-wider">{userRole}</span>
                     </div>
                     <div className="flex items-center space-x-6">
-                        {/* ✨ FIXED TOGGLE BUTTON ✨ */}
                         <button onClick={() => setDarkMode((prev) => !prev)} className="p-2 rounded-xl border border-gray-200 dark:border-slate-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-all">
                             {darkMode ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
                         </button>

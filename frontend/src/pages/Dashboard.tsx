@@ -175,17 +175,83 @@ const Dashboard: React.FC = () => {
                     <div className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl relative border dark:border-slate-700">
                         <button onClick={() => setIsAddUserModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><X className="h-5 w-5" /></button>
                         <h3 className="text-xl font-bold mb-4 flex items-center"><UserPlus className="h-5 w-5 mr-2 text-[#120085] dark:text-blue-400"/> Add User</h3>
+                        
                         <form onSubmit={handleAddUser} className="space-y-4 text-left">
-                            <input type="text" value={newUserName} onChange={(e)=>setNewUserName(e.target.value)} required placeholder="Username" className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
-                            <input type="email" value={newUserEmail} onChange={(e)=>setNewUserEmail(e.target.value)} required placeholder="Email Address" className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
-                            <input type="password" value={newUserPassword} onChange={(e)=>setNewUserPassword(e.target.value)} required placeholder="Temporary Password" className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" />
-                            <select value={newUserRole} onChange={(e)=>setNewUserRole(e.target.value as any)} className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white">
-                                <option value="Sales User">Sales User</option>
-                                <option value="Admin">Admin</option>
-                            </select>
+                            {/* Username Field */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    Username <span className="text-rose-500">*</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    value={newUserName} 
+                                    onChange={(e)=>setNewUserName(e.target.value)} 
+                                    required 
+                                    placeholder="e.g. jsmith" 
+                                    className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" 
+                                />
+                            </div>
+
+                            {/* Email Field */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    Email Address <span className="text-rose-500">*</span>
+                                </label>
+                                <input 
+                                    type="email" 
+                                    value={newUserEmail} 
+                                    onChange={(e)=>setNewUserEmail(e.target.value)} 
+                                    required 
+                                    placeholder="e.g. jsmith@example.com" 
+                                    className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" 
+                                />
+                            </div>
+
+                            {/* Password Field */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    Temporary Password <span className="text-rose-500">*</span>
+                                </label>
+                                <input 
+                                    type="password" 
+                                    value={newUserPassword} 
+                                    onChange={(e)=>setNewUserPassword(e.target.value)} 
+                                    required 
+                                    placeholder="Create a temporary password" 
+                                    className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white" 
+                                />
+                            </div>
+
+                            {/* System Role Dropdown */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    System Role <span className="text-rose-500">*</span>
+                                </label>
+                                <select 
+                                    value={newUserRole} 
+                                    onChange={(e)=>setNewUserRole(e.target.value as any)} 
+                                    className="w-full p-2.5 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-xl text-sm focus:outline-none dark:text-white cursor-pointer"
+                                >
+                                    <option value="Sales User">Sales User</option>
+                                    <option value="Admin">Admin</option>
+                                </select>
+                            </div>
+
+                            {/* Action Buttons */}
                             <div className="flex justify-end space-x-2 pt-2">
-                                <button type="button" onClick={() => setIsAddUserModalOpen(false)} className="px-4 py-2 border dark:border-slate-600 rounded-xl text-sm dark:text-white">Cancel</button>
-                                <button type="submit" className="px-4 py-2 bg-[#120085] hover:bg-blue-800 text-white rounded-xl text-sm font-semibold shadow-md">Create User</button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setIsAddUserModalOpen(false)} 
+                                    className="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-xl text-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all dark:text-white"
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    className="px-4 py-2 bg-[#120085] hover:bg-blue-800 text-white rounded-xl text-sm font-semibold shadow-md transition-all"
+                                >
+                                    Create User
+                                </button>
                             </div>
                         </form>
                     </div>

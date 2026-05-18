@@ -11,6 +11,16 @@ connectDB();
 
 const app = express();
 
+// 1. Root Health Check 
+app.get('/', (req, res) => {
+    res.status(200).json({ message: 'GigFlow Backend API is running! Please navigate to /api for endpoints.' });
+});
+
+// 2. API Health Check 
+app.get('/api', (req, res) => {
+    res.status(200).json({ message: 'Welcome to the GigFlow API! Server is running smoothly.' });
+});
+
 // Global Middlewares
 app.use(cors());
 app.use(express.json());
