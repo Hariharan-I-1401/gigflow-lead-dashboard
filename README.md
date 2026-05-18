@@ -83,29 +83,3 @@ npm run dev
 cd frontend
 npm install
 npm run dev
-
-
-📡 API Documentation Synopsis
-
-All endpoints map to the base URL: http://localhost:5000/api
-Protected endpoints require the Authorization: Bearer <token> header.
-
-Authentication Routes
-
-POST /auth/register - Register a new system user (Requires username, email, password, role).
-
-POST /auth/login - Authenticate and receive JWT token.
-
-GET /auth/ - [Admin Only] Retrieve all system users.
-
-DELETE /auth/:id - [Admin Only] Revoke a user's access.
-
-Leads Routes
-
-GET /leads - Retrieve leads with mandatory backend pagination (?page=1&limit=10) and dynamic filters (status, source, search, sort).
-
-POST /leads - Create a new pipeline lead.
-
-PUT /leads/:id - Update an existing lead's status or information.
-
-DELETE /leads/:id - [Admin Only] Permanently remove a lead from the database.
